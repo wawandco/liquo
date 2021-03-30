@@ -1,4 +1,4 @@
-// Liquibase package aims to provide a ox plugin to manage migrations
+// Liquo package aims to provide a ox plugin to manage migrations
 // with the Liquibase style.  That is, using the databasechangelog and
 // databasechangeloglock as well as the xml format for liquibase
 // migrations.
