@@ -1,14 +1,3 @@
-package liquo
-
-import (
-	"context"
-
-	"github.com/jackc/pgx/v4"
-)
-
-// CreateInstruction for the database tables that should be in the
-// database.
-var createInstruction = `
 CREATE TABLE IF NOT EXISTS public.databasechangelog (
 	id             character varying(255)                  not null,
 	author         character varying(255)                  not null,
@@ -32,16 +21,3 @@ CREATE TABLE IF NOT EXISTS public.databasechangeloglock (
 	lockgranted  timestamp without time zone,
 	lockedby     character varying(255)
 );
-`
-
-// EnsureTables are in the database.
-func (lb Command) EnsureTables(conn *pgx.Conn) error {
-	err := conn.Ping(context.Background())
-	if err != nil {
-		return err
-	}
-
-	_, err = conn.Exec(context.Background(), createInstruction)
-
-	return err
-}

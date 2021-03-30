@@ -2,6 +2,7 @@ package liquo
 
 import (
 	"context"
+	_ "embed"
 	"encoding/xml"
 	"errors"
 	"io/ioutil"
@@ -13,8 +14,15 @@ import (
 	"github.com/wawandco/oxpecker/plugins"
 )
 
-var _ plugins.Command = (*Command)(nil)
-var _ plugins.HelpTexter = (*Command)(nil)
+var (
+	_ plugins.Command    = (*Command)(nil)
+	_ plugins.HelpTexter = (*Command)(nil)
+
+	// CreateInstruction for the database tables that should be in the
+	// database.
+	// go:embed templates/tables.sql
+	createInstruction string
+)
 
 var ErrInvalidInstruction = errors.New("Invalid instruction please specify up or down")
 
@@ -198,4 +206,16 @@ func (lb Command) ReadMigration(path string) (*Migration, error) {
 	}
 
 	return m, nil
+}
+
+// EnsureTables are in the database.
+func (lb Command) EnsureTables(conn *pgx.Conn) error {
+	err := conn.Ping(context.Background())
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Exec(context.Background(), createInstruction)
+
+	return err
 }

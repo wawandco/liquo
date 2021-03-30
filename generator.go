@@ -3,6 +3,7 @@ package liquo
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,10 @@ var (
 	ErrNameArgMissing = errors.New("name arg missing")
 	ErrInvalidName    = errors.New("invalid migration name")
 	ErrInvalidPath    = errors.New("invalid path")
+
+	// MigrationTemplate for the migration generator.
+	// go:embed templates/migration.xml.tmpl
+	migrationTemplate string
 )
 
 var (
