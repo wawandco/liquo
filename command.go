@@ -20,7 +20,7 @@ var (
 
 	// CreateInstruction for the database tables that should be in the
 	// database.
-	// go:embed templates/tables.sql
+	//go:embed templates/tables.sql
 	createInstruction string
 )
 

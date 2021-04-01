@@ -24,7 +24,7 @@ var (
 	ErrInvalidPath    = errors.New("invalid path")
 
 	// MigrationTemplate for the migration generator.
-	// go:embed templates/migration.xml.tmpl
+	//go:embed templates/migration.xml.tmpl
 	migrationTemplate string
 )
 
@@ -57,6 +57,12 @@ type Generator struct {
 // Name is the name used to identify the generator and also
 // the plugin
 func (g Generator) Name() string {
+	return "liquo/generate-migration"
+}
+
+// Name is the name used to identify the generator and also
+// the plugin
+func (g Generator) InvocationName() string {
 	return "migration"
 }
 
