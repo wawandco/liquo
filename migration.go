@@ -17,10 +17,10 @@ type Migration struct {
 
 // ChangeSet with SQL and Rollback instructions.
 type ChangeSet struct {
-	ID          string `xml:"id,attr"`
-	Author      string `xml:"author,attr"`
-	SQL         string `xml:"sql"`
-	RollbackSQL string `xml:"rollback"`
+	ID          string   `xml:"id,attr"`
+	Author      string   `xml:"author,attr"`
+	SQL         []string `xml:"sql"`
+	RollbackSQL string   `xml:"rollback"`
 }
 
 // Execute a changeset takes the SQL part of the changeset and runs it.
@@ -44,9 +44,11 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 		return err
 	}
 
-	_, err = conn.Exec(ctx, cs.SQL)
-	if err != nil {
-		return err
+	for _, sql := range cs.SQL {
+		_, err = conn.Exec(ctx, sql)
+		if err != nil {
+			return err
+		}
 	}
 
 	insertStmt := `
