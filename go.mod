@@ -3,6 +3,7 @@ module github.com/wawandco/liquo
 go 1.16
 
 require (
+	github.com/go-xmlfmt/xmlfmt v0.0.0-20191208150333-d5b6f63a941b
 	github.com/gobuffalo/flect v0.2.2
 	github.com/gobuffalo/pop/v5 v5.3.3
 	github.com/jackc/pgx/v4 v4.11.0

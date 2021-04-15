@@ -177,3 +177,49 @@ func TestGeneratorComposeName(t *testing.T) {
 		}
 	})
 }
+
+func TestAddToChangelog(t *testing.T) {
+	g := Generator{}
+	base := os.TempDir()
+	os.Chdir(base)
+
+	changelog, err := createChangelog(base)
+	if err != nil {
+		t.Fatalf("could not create the changelog")
+	}
+
+	err = g.addToChangelog(base, "some.xml")
+	if err != nil {
+		t.Fatalf("error adding to changelog :%v", err)
+	}
+
+	content, err := ioutil.ReadFile(changelog)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !strings.Contains(string(content), `<include file="some.xml" />`) {
+		t.Error("should contain new statement")
+	}
+}
+
+func createChangelog(base string) (string, error) {
+	err := os.MkdirAll(filepath.Join(base, "migrations"), 0777)
+	if err != nil {
+		return "", err
+	}
+
+	changelog := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+	<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+    	<include file="migrations/schema/20210203001019-uuid.xml" />
+	</databaseChangeLog>
+	`
+
+	filename := filepath.Join(base, "migrations", "changelog.xml")
+	err = ioutil.WriteFile(filename, []byte(changelog), 0777)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
+}

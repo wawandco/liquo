@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/go-xmlfmt/xmlfmt"
 	"github.com/gobuffalo/flect"
 	"github.com/spf13/pflag"
 	"github.com/wawandco/liquo/internal/log"
@@ -74,6 +76,45 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 		return ErrNameArgMissing
 	}
 
+	path, err := g.generateFile(args)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("migration generated in %v", path)
+	err = g.addToChangelog(root, path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if err == nil {
+		log.Infof("migration added to the changelog")
+	}
+
+	return nil
+}
+
+func (g Generator) addToChangelog(root, path string) error {
+	changelog := filepath.Join(root, "migrations", "changelog.xml")
+	original, err := ioutil.ReadFile(changelog)
+	if err != nil {
+		return err
+	}
+
+	statement := fmt.Sprintf(`<include file="%s" />`, path)
+	result := strings.Replace(string(original), `</databaseChangeLog>`, statement+"</databaseChangeLog>", 1)
+	result = xmlfmt.FormatXML(result, "", "\t")
+	parts := strings.Split(result, "\n")
+	result = strings.Join(parts[1:], "\n")
+	err = ioutil.WriteFile(changelog, []byte(result), 0777)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g Generator) generateFile(args []string) (string, error) {
 	timestamp := time.Now().UTC().Format("20060102150405")
 	if g.mockTimestamp != "" {
 		timestamp = g.mockTimestamp
@@ -81,7 +122,7 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 
 	filename, err := g.composeFilename(args[2], timestamp)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	path := g.baseFolder
@@ -90,40 +131,23 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 	}
 
 	path = filepath.Join(path, filename)
-	_, err = os.Stat(path)
-	if err == nil {
-		log.Infof("%v already exists", path)
-		return nil
-	}
-
-	if !os.IsNotExist(err) {
-		return err
-	}
-
-	// Creating the folder
 	err = os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
-		return (err)
+		return path, err
 	}
 
 	tmpl, err := template.New("migration-template").Parse(migrationTemplate)
 	if err != nil {
-		return err
+		return path, err
 	}
 
 	var tpl bytes.Buffer
 	err = tmpl.Execute(&tpl, strings.ReplaceAll(filename, ".xml", ""))
 	if err != nil {
-		return err
+		return path, err
 	}
 
-	err = ioutil.WriteFile(path, tpl.Bytes(), 0655)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("migration generated in %v", path)
-	return nil
+	return path, ioutil.WriteFile(path, tpl.Bytes(), 0655)
 }
 
 // composeFilename from the passed arg and timestamp, if the passed path is
@@ -144,7 +168,7 @@ func (g Generator) composeFilename(passed, timestamp string) (string, error) {
 // Parseflags will parse the baseFolder from the --base or -b flag
 func (g *Generator) ParseFlags(args []string) {
 	g.flags = pflag.NewFlagSet(g.Name(), pflag.ContinueOnError)
-	g.flags.StringVarP(&g.baseFolder, "base", "b", "", "base folder for the migrations")
+	g.flags.StringVarP(&g.baseFolder, "base", "b", "migrations", "destination folder of the generated migration")
 	g.flags.Parse(args) //nolint:errcheck,we don't care hence the flag
 }
 
