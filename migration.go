@@ -44,12 +44,7 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 		return err
 	}
 
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(ctx, cs.SQL)
+	_, err = conn.Exec(ctx, cs.SQL)
 	if err != nil {
 		return err
 	}
@@ -60,12 +55,7 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 		VALUES ($1, $2, $3, $4, $5, $6);
 	`
 
-	_, err = tx.Exec(ctx, insertStmt, cs.ID, cs.Author, file, time.Now(), order+1, "EXECUTED")
-	if err != nil {
-		return err
-	}
-
-	err = tx.Commit(ctx)
+	_, err = conn.Exec(ctx, insertStmt, cs.ID, cs.Author, file, time.Now(), order+1, "EXECUTED")
 	if err != nil {
 		return err
 	}
@@ -79,21 +69,16 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 // Rollback the changeset runs the Rollback section of the
 // changeset.
 func (cs ChangeSet) Rollback(conn *pgx.Conn) error {
-	tx, err := conn.BeginTx(context.Background(), pgx.TxOptions{})
-	if err != nil {
-		return err
-	}
-
 	log.Infof("Rolling back %v. \n", cs.ID)
-	_, err = tx.Exec(context.Background(), cs.RollbackSQL)
+	_, err := conn.Exec(context.Background(), cs.RollbackSQL)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(context.Background(), `DELETE FROM databasechangelog WHERE id = $1`, cs.ID)
+	_, err = conn.Exec(context.Background(), `DELETE FROM databasechangelog WHERE id = $1`, cs.ID)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(context.Background())
+	return nil
 }
