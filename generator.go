@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -21,9 +22,10 @@ import (
 )
 
 var (
-	ErrNameArgMissing = errors.New("name arg missing")
-	ErrInvalidName    = errors.New("invalid migration name")
-	ErrInvalidPath    = errors.New("invalid path")
+	ErrNameArgMissing         = errors.New("name arg missing")
+	ErrInvalidName            = errors.New("invalid migration name")
+	ErrInvalidPath            = errors.New("invalid path")
+	ErrInvalidChangelogFormat = errors.New("changelog.xml file has bad format or is empty")
 
 	// MigrationTemplate for the migration generator.
 	//go:embed templates/migration.xml.tmpl
@@ -83,14 +85,22 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 
 	log.Infof("migration generated in %v", path)
 	err = g.addToChangelog(root, path)
-	if err != nil && !os.IsNotExist(err) {
+
+	if os.IsNotExist(err) {
+		log.Infof("auto-add to changelog file failed: %v", err.Error())
+		return nil
+	}
+
+	if err == ErrInvalidChangelogFormat {
+		log.Infof("auto-add to changelog file failed: %v", err.Error())
+		return nil
+	}
+
+	if err != nil {
 		return err
 	}
 
-	if err == nil {
-		log.Infof("migration added to the changelog")
-	}
-
+	log.Infof("migration added to the changelog")
 	return nil
 }
 
@@ -101,8 +111,35 @@ func (g Generator) addToChangelog(root, path string) error {
 		return err
 	}
 
+	fileContent := string(original)
+
+	fileContent = strings.TrimSpace(fileContent)
+	if len(original) == 0 {
+		return ErrInvalidChangelogFormat
+	}
+
+	mainTagRegexPattern := `<\?xml\s+.+\?>`
+	matchesMainTag, err := regexp.MatchString(mainTagRegexPattern, fileContent)
+	if err != nil {
+		return err
+	}
+
+	if !matchesMainTag {
+		return ErrInvalidChangelogFormat
+	}
+
+	dbChangelogTags := `<databaseChangeLog\s+.*>(.|\n)*</databaseChangeLog>`
+	matchesTags, err := regexp.MatchString(dbChangelogTags, fileContent)
+	if err != nil {
+		return err
+	}
+
+	if !matchesTags {
+		return ErrInvalidChangelogFormat
+	}
+
 	statement := fmt.Sprintf(`<include file="%s" />`, path)
-	result := strings.Replace(string(original), `</databaseChangeLog>`, statement+"</databaseChangeLog>", 1)
+	result := strings.Replace(fileContent, `</databaseChangeLog>`, statement+"</databaseChangeLog>", 1)
 	result = xmlfmt.FormatXML(result, "", "\t")
 	parts := strings.Split(result, "\n")
 	result = strings.Join(parts[1:], "\n")
