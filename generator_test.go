@@ -183,7 +183,13 @@ func TestAddToChangelog(t *testing.T) {
 	base := os.TempDir()
 	os.Chdir(base)
 
-	changelog, err := createChangelog(base)
+	baseChangeLog := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+	<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+    	<include file="migrations/schema/20210203001019-uuid.xml" />
+	</databaseChangeLog>
+	`
+
+	changelog, err := createChangelog(base, baseChangeLog)
 	if err != nil {
 		t.Fatalf("could not create the changelog")
 	}
@@ -203,20 +209,94 @@ func TestAddToChangelog(t *testing.T) {
 	}
 }
 
-func createChangelog(base string) (string, error) {
+func TestAddToChangelogInvalidFormats(t *testing.T) {
+	g := Generator{}
+	base := os.TempDir()
+	os.Chdir(base)
+
+	tcases := []struct {
+		changeLogContent string
+		description      string
+	}{
+		{
+			description:      "empty file",
+			changeLogContent: ``,
+		},
+		{
+			description:      "missing <databaseChangeLog> tag",
+			changeLogContent: `<?xml version="1.0" encoding="UTF-8" standalone="no"?>`,
+		},
+		{
+			description: "missing main <xml> tag",
+			changeLogContent: `<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+    				<include file="migrations/schema/20210203001019-uuid.xml" />
+				</databaseChangeLog>
+			`,
+		},
+		{
+			description: "has both tags, but bad <xml> content",
+			changeLogContent: `xml version="1.0" encoding="UTF-8" standalone="no">
+			<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+				<include file="migrations/schema/20210203001019-uuid.xml" />
+			</databaseChangeLog>
+			`,
+		},
+		{
+			description: "has both tags, but bad <databaseChangeLog> content",
+			changeLogContent: `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+			<databaseChangeLog>
+				<include file="migrations/schema/20210203001019-uuid.xml" />
+			</typo databaseChangeLog>
+			`,
+		},
+	}
+
+	for _, tc := range tcases {
+		changelog, err := createChangelog(base, tc.changeLogContent)
+		if err != nil {
+			t.Fatalf("could not create the changelog. case: %v", tc.description)
+		}
+
+		err = g.addToChangelog(base, "some.xml")
+		if err == nil {
+			t.Fatalf("should contain an error. case: %v", tc.description)
+		}
+
+		if err != ErrInvalidChangelogFormat {
+			t.Errorf("has error, but from unexpected type: %v. case: %v", err.Error(), tc.description)
+		}
+
+		content, err := ioutil.ReadFile(changelog)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if strings.Contains(string(content), `<include file="some.xml" />`) {
+			t.Error("should not contain new statement")
+		}
+	}
+}
+
+func TestAddToChangelogFileNotExists(t *testing.T) {
+	g := Generator{}
+	base := os.TempDir()
+	os.Chdir(base)
+
+	os.Remove(filepath.Join(base, "migrations", "changelog.xml"))
+	err := g.addToChangelog(base, "some.xml")
+	if !os.IsNotExist(err) {
+		t.Errorf("has error, but from unexpected type: %v", err.Error())
+	}
+}
+
+func createChangelog(base string, changeLogContent string) (string, error) {
 	err := os.MkdirAll(filepath.Join(base, "migrations"), 0777)
 	if err != nil {
 		return "", err
 	}
 
-	changelog := `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-	<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
-    	<include file="migrations/schema/20210203001019-uuid.xml" />
-	</databaseChangeLog>
-	`
-
 	filename := filepath.Join(base, "migrations", "changelog.xml")
-	err = ioutil.WriteFile(filename, []byte(changelog), 0777)
+	err = ioutil.WriteFile(filename, []byte(changeLogContent), 0777)
 	if err != nil {
 		return "", err
 	}
