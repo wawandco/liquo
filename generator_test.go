@@ -31,10 +31,11 @@ func TestGeneratorRun(t *testing.T) {
 			t.Errorf("error should be nil, got %v", err)
 		}
 
+		// Check generated migration file
 		path := filepath.Join(root, "12345-aaa.xml")
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
-			t.Error("should have created the file in the root")
+			t.Error("should have created migration file in the root")
 		}
 
 		d, err := ioutil.ReadFile(path)
@@ -44,6 +45,22 @@ func TestGeneratorRun(t *testing.T) {
 
 		if content := string(d); !strings.Contains(content, "12345-aaa") {
 			t.Errorf("file content %v should contain %v", content, "12345-aaa")
+		}
+
+		// Check that the changelog file exists and verify content
+		path = filepath.Join(root, "migrations", "changelog.xml")
+		_, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			t.Error("should have created changelog file in the root")
+		}
+
+		d, err = ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("error should be nil, got %v", err)
+		}
+
+		if content := string(d); !strings.Contains(content, `<include file="12345-aaa.xml" />`) {
+			t.Errorf("file content %v should contain %v", content, `<include file="12345-aaa.xml" />`)
 		}
 	})
 
@@ -60,6 +77,7 @@ func TestGeneratorRun(t *testing.T) {
 			t.Errorf("error should be nil, got %v", err)
 		}
 
+		// Check generated migration file
 		path := filepath.Join(root, "folder", "is", "here", "12345-aaa.xml")
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
@@ -73,6 +91,22 @@ func TestGeneratorRun(t *testing.T) {
 
 		if content := string(d); !strings.Contains(content, "12345-aaa") {
 			t.Errorf("file content %v should contain %v", content, "12345-aaa")
+		}
+
+		// Check that the changelog file exists and verify content
+		path = filepath.Join(root, "migrations", "changelog.xml")
+		_, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			t.Error("should have created changelog file in the root")
+		}
+
+		d, err = ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("error should be nil, got %v", err)
+		}
+
+		if content := string(d); !strings.Contains(content, `<include file="folder/is/here/12345-aaa.xml" />`) {
+			t.Errorf("file content %v should contain %v", content, `<include file="folder/is/here/12345-aaa.xml" />`)
 		}
 	})
 
@@ -94,6 +128,7 @@ func TestGeneratorRun(t *testing.T) {
 			t.Errorf("error should be nil, got %v", err)
 		}
 
+		// Check generated migration file
 		path := filepath.Join(root, "folder", "is", "here", "12345-aaa.xml")
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
@@ -107,6 +142,22 @@ func TestGeneratorRun(t *testing.T) {
 
 		if content := string(d); !strings.Contains(content, "12345-aaa") {
 			t.Errorf("file content %v should contain %v", content, "12345-aaa")
+		}
+
+		// Check that the changelog file exists and verify content
+		path = filepath.Join(root, "migrations", "changelog.xml")
+		_, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			t.Error("should have created changelog file in the root")
+		}
+
+		d, err = ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("error should be nil, got %v", err)
+		}
+
+		if content := string(d); !strings.Contains(content, `<include file="folder/is/here/12345-aaa.xml" />`) {
+			t.Errorf("file content %v should contain %v", content, `<include file="folder/is/here/12345-aaa.xml" />`)
 		}
 	})
 
@@ -132,6 +183,7 @@ func TestGeneratorRun(t *testing.T) {
 			t.Errorf("error should be nil, got %v", err)
 		}
 
+		// Check generated migration file
 		path := filepath.Join(root, "migrations", "12345-aaa.xml")
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
@@ -146,38 +198,21 @@ func TestGeneratorRun(t *testing.T) {
 		if content := string(d); !strings.Contains(content, "12345-aaa") {
 			t.Errorf("file content %v should contain %v", content, "12345-aaa")
 		}
-	})
 
-	t.Run("changelog generator", func(t *testing.T) {
-		root := t.TempDir()
-		err := os.Chdir(root)
-		if err != nil {
-			t.Error("could not change to temp directory")
-		}
-
-		g := Generator{baseFolder: "migrations"}
-		err = g.Generate(context.Background(), root, []string{"generate", "migration", "changelog"})
-		if err != nil {
-			t.Errorf("error should be nil, got %v", err)
-		}
-
-		path := filepath.Join(root, "migrations", "changelog.xml")
+		// Check that the changelog file exists and verify content
+		path = filepath.Join(root, "migrations", "changelog.xml")
 		_, err = os.Stat(path)
 		if os.IsNotExist(err) {
-			t.Error("should have created the file in the root")
+			t.Error("should have created changelog file in the root")
 		}
 
-		d, err := ioutil.ReadFile(path)
+		d, err = ioutil.ReadFile(path)
 		if err != nil {
 			t.Errorf("error should be nil, got %v", err)
 		}
 
-		if content := string(d); !strings.Contains(content, "<?xml") {
-			t.Errorf("file content %v should contain %v", content, "<?xml")
-		}
-
-		if content := string(d); !strings.Contains(content, "<databaseChangeLog") {
-			t.Errorf("file content %v should contain %v", content, "<databaseChangeLog")
+		if content := string(d); !strings.Contains(content, `<include file="migrations/12345-aaa.xml" />`) {
+			t.Errorf("file content %v should contain %v", content, `<include file="migrations/12345-aaa.xml" />`)
 		}
 	})
 }
@@ -307,18 +342,6 @@ func TestAddToChangelogInvalidFormats(t *testing.T) {
 		if strings.Contains(string(content), `<include file="some.xml" />`) {
 			t.Error("should not contain new statement")
 		}
-	}
-}
-
-func TestAddToChangelogFileNotExists(t *testing.T) {
-	g := Generator{}
-	base := os.TempDir()
-	os.Chdir(base)
-
-	os.Remove(filepath.Join(base, "migrations", "changelog.xml"))
-	err := g.addToChangelog(base, "some.xml")
-	if !os.IsNotExist(err) {
-		t.Errorf("has error, but from unexpected type: %v", err.Error())
 	}
 }
 

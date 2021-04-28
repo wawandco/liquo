@@ -80,16 +80,6 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 		return ErrNameArgMissing
 	}
 
-	if args[2] == "changelog" {
-		err := g.generateChangelogFile()
-		if err != nil {
-			log.Infof("failed generating changelog.xml file: %v", err.Error())
-		}
-
-		log.Infof("changelog.xml file was generated successfully")
-		return nil
-	}
-
 	path, err := g.generateFile(args)
 	if err != nil {
 		return err
@@ -97,11 +87,6 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 
 	log.Infof("migration generated in %v", path)
 	err = g.addToChangelog(root, path)
-
-	if os.IsNotExist(err) {
-		log.Infof("auto-add to changelog file failed: %v", err.Error())
-		return nil
-	}
 
 	if err == ErrInvalidChangelogFormat {
 		log.Infof("auto-add to changelog file failed: %v", err.Error())
@@ -119,6 +104,17 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 func (g Generator) addToChangelog(root, path string) error {
 	changelog := filepath.Join(root, "migrations", "changelog.xml")
 	original, err := ioutil.ReadFile(changelog)
+
+	if os.IsNotExist(err) {
+		err = g.generateChangelogFile()
+		if err != nil {
+			log.Infof("failed generating changelog.xml file: %v", err.Error())
+		}
+
+		log.Infof("changelog.xml was not found, file was generated automatically")
+		original, err = ioutil.ReadFile(changelog)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -201,7 +197,7 @@ func (g Generator) generateFile(args []string) (string, error) {
 
 func (g Generator) generateChangelogFile() error {
 	filename := "changelog.xml"
-	path := filepath.Join(g.baseFolder, filename)
+	path := filepath.Join("migrations", filename)
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
