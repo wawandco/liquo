@@ -30,6 +30,8 @@ var (
 	// MigrationTemplate for the migration generator.
 	//go:embed templates/migration.xml.tmpl
 	migrationTemplate string
+	//go:embed templates/changelog.xml.tmpl
+	changelogTemplate string
 )
 
 var (
@@ -78,6 +80,16 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 		return ErrNameArgMissing
 	}
 
+	if args[2] == "changelog" {
+		err := g.generateChangelogFile()
+		if err != nil {
+			log.Infof("failed generating changelog.xml file: %v", err.Error())
+		}
+
+		log.Infof("changelog.xml file was generated successfully")
+		return nil
+	}
+
 	path, err := g.generateFile(args)
 	if err != nil {
 		return err
@@ -100,7 +112,7 @@ func (g Generator) Generate(ctx context.Context, root string, args []string) err
 		return err
 	}
 
-	log.Infof("migration added to the changelog")
+	log.Infof("migration added to the changelog.xml file")
 	return nil
 }
 
@@ -185,6 +197,18 @@ func (g Generator) generateFile(args []string) (string, error) {
 	}
 
 	return path, ioutil.WriteFile(path, tpl.Bytes(), 0655)
+}
+
+func (g Generator) generateChangelogFile() error {
+	filename := "changelog.xml"
+	path := filepath.Join(g.baseFolder, filename)
+
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, []byte(changelogTemplate), 0655)
 }
 
 // composeFilename from the passed arg and timestamp, if the passed path is

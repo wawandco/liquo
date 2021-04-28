@@ -147,6 +147,39 @@ func TestGeneratorRun(t *testing.T) {
 			t.Errorf("file content %v should contain %v", content, "12345-aaa")
 		}
 	})
+
+	t.Run("changelog generator", func(t *testing.T) {
+		root := t.TempDir()
+		err := os.Chdir(root)
+		if err != nil {
+			t.Error("could not change to temp directory")
+		}
+
+		g := Generator{baseFolder: "migrations"}
+		err = g.Generate(context.Background(), root, []string{"generate", "migration", "changelog"})
+		if err != nil {
+			t.Errorf("error should be nil, got %v", err)
+		}
+
+		path := filepath.Join(root, "migrations", "changelog.xml")
+		_, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			t.Error("should have created the file in the root")
+		}
+
+		d, err := ioutil.ReadFile(path)
+		if err != nil {
+			t.Errorf("error should be nil, got %v", err)
+		}
+
+		if content := string(d); !strings.Contains(content, "<?xml") {
+			t.Errorf("file content %v should contain %v", content, "<?xml")
+		}
+
+		if content := string(d); !strings.Contains(content, "<databaseChangeLog") {
+			t.Errorf("file content %v should contain %v", content, "<databaseChangeLog")
+		}
+	})
 }
 
 func TestGeneratorComposeName(t *testing.T) {
