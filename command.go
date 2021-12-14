@@ -7,16 +7,16 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/gobuffalo/pop/v5"
+	"github.com/gobuffalo/pop/v6"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/pflag"
 	"github.com/wawandco/liquo/internal/log"
-	"github.com/wawandco/oxpecker/plugins"
+	"github.com/wawandco/ox/plugins/core"
 )
 
 var (
-	_ plugins.Command    = (*Command)(nil)
-	_ plugins.HelpTexter = (*Command)(nil)
+	_ core.Command    = (*Command)(nil)
+	_ core.HelpTexter = (*Command)(nil)
 
 	// CreateInstruction for the database tables that should be in the
 	// database.
