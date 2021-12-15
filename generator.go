@@ -18,7 +18,7 @@ import (
 	"github.com/gobuffalo/flect"
 	"github.com/spf13/pflag"
 	"github.com/wawandco/liquo/internal/log"
-	"github.com/wawandco/oxpecker/plugins"
+	"github.com/wawandco/ox/plugins/core"
 )
 
 var (
@@ -36,9 +36,9 @@ var (
 
 var (
 	// Ensuring we're building a plugin
-	_ plugins.Plugin = (*Generator)(nil)
+	_ core.Plugin = (*Generator)(nil)
 	// Ensuring the plugin is a flagparser
-	_ plugins.FlagParser = (*Generator)(nil)
+	_ core.FlagParser = (*Generator)(nil)
 )
 
 // Generator for liquibase SQL migrations, it generates xml liquibase

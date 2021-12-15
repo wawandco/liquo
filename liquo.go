@@ -9,13 +9,13 @@
 package liquo
 
 import (
-	"github.com/gobuffalo/pop/v5"
-	"github.com/wawandco/oxpecker/plugins"
+	"github.com/gobuffalo/pop/v6"
+	"github.com/wawandco/ox/plugins/core"
 )
 
 // Plugins on this package.
-func Plugins() []plugins.Plugin {
-	return []plugins.Plugin{
+func Plugins() []core.Plugin {
+	return []core.Plugin{
 		&Command{connections: pop.Connections},
 		&Generator{},
 	}
