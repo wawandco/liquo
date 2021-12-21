@@ -38,7 +38,7 @@ func (lb Command) Name() string {
 }
 
 func (lb Command) ParentName() string {
-	return "db"
+	return "database"
 }
 
 func (lb Command) HelpText() string {
