@@ -5,7 +5,9 @@ import (
 	_ "embed"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/gobuffalo/pop/v6"
 	"github.com/jackc/pgx/v4"
@@ -71,7 +73,7 @@ func (lb *Command) RunBeforeTest(ctx context.Context, root string, args []string
 func (lb Command) Up() error {
 	cx := lb.connections[lb.connectionName]
 	if cx == nil {
-		return errors.New("connection not found")
+		return fmt.Errorf("connection not found")
 	}
 
 	conn, err := pgx.Connect(context.Background(), cx.URL())
@@ -96,12 +98,17 @@ func (lb Command) Up() error {
 			return err
 		}
 
+		if m == nil {
+			continue
+		}
+
 		for _, mc := range m.ChangeSets {
 			err = mc.Execute(conn, v.File)
-			if err != nil {
-				log.Errorf("error executing `%v`.", mc.ID)
-				return err
+			if err == nil {
+				continue
 			}
+
+			return fmt.Errorf("error running migration `%s`: %w", mc.ID, err)
 		}
 	}
 
@@ -148,6 +155,10 @@ func (lb *Command) Rollback() error {
 		m, err := lb.ReadMigration(file)
 		if err != nil {
 			return err
+		}
+
+		if m == nil {
+			continue
 		}
 
 		for _, v := range m.ChangeSets {
@@ -197,6 +208,10 @@ func (lb Command) ReadMigration(path string) (*Migration, error) {
 	d, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
+	}
+
+	if filepath.Ext(path) != ".xml" {
+		return nil, nil
 	}
 
 	m := &Migration{}

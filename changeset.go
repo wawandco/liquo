@@ -3,6 +3,7 @@ package liquo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -36,7 +37,7 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Error checking if changeset %v has already been executed:%w", cs.ID, err)
 	}
 
 	_, err = conn.Exec(ctx, cs.sql())
@@ -45,8 +46,8 @@ func (cs ChangeSet) Execute(conn *pgx.Conn, file string) error {
 	}
 
 	insertStmt := `
-		INSERT 
-		INTO databasechangelog (id, author, filename, dateexecuted, orderexecuted,exectype) 
+		INSERT
+		INTO databasechangelog (id, author, filename, dateexecuted, orderexecuted,exectype)
 		VALUES ($1, $2, $3, $4, $5, $6);
 	`
 
