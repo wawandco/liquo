@@ -99,6 +99,7 @@ func (lb Command) Up() error {
 		}
 
 		if m == nil {
+			log.Infof("[Warning] Skipping migration `%v` because its not processable by Liquo.", v.File)
 			continue
 		}
 
