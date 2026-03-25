@@ -10,7 +10,7 @@ func Info(message string) {
 	fmt.Printf("[info] %v\n", message)
 }
 
-func Infof(message string, args ...interface{}) {
+func Infof(message string, args ...any) {
 	fmt.Printf("[info] "+message+"\n", args...)
 }
 
@@ -18,7 +18,7 @@ func Error(message string) {
 	fmt.Printf("[error] %v\n", message)
 }
 
-func Errorf(message string, args ...interface{}) {
+func Errorf(message string, args ...any) {
 	fmt.Printf("[error] "+message, args...)
 }
 
@@ -30,6 +30,6 @@ func Warn(message string) {
 	fmt.Printf("[warning] %v\n", message)
 }
 
-func Warnf(message string, args ...interface{}) {
+func Warnf(message string, args ...any) {
 	fmt.Printf("[warning] "+message, args...)
 }
