@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/gobuffalo/pop/v6"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/spf13/pflag"
 	"github.com/wawandco/liquo/internal/log"
 	"github.com/wawandco/ox/plugins/core"
